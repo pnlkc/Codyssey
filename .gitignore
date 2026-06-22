@@ -1,0 +1,67 @@
+# =========================================================================
+# Codyssey Gitignore Configuration
+# =========================================================================
+
+# 1. 명세서 파일 차단
+*_명세서.md
+
+# 2. 에이전트 로컬 세션 메모리
+.harness/memory.md
+
+# 3. 환경 변수 및 자격 증명 키
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+*.pem
+*.key
+id_rsa
+google-services.json
+
+# 4. 패키지 및 가상 환경
+node_modules/
+venv/
+.venv/
+env/
+pip-log.txt
+
+# 5. 빌드 결과물 및 바이너리
+dist/
+build/
+out/
+target/
+*.exe
+*.dll
+*.so
+
+# 6. 로그 및 시스템 임시 파일
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# 7. AI 모델 가중치 파일 (대용량)
+*.onnx
+*.pt
+*.pth
+*.pkl
+*.bin
+*.h5
+*.ckpt
+*.pb
+*.safetensors
+
+# 8. 생성된 미디어 출력 파일 (AI 구동 결과물)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mov
+*.webm
+*.mp3
+*.wav
+*.flac
