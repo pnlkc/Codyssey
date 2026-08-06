@@ -318,9 +318,9 @@ def generate_final_markdown_report(date_str, recommendation, places, errors, gem
 
 def save_results(date_str, recommendation, places, errors, markdown_content):
     """
-    results/ 디렉토리에 원본 JSON 및 최종 Markdown 리포트를 저장합니다.
+    과제산출물 하위 results/ 디렉토리에 원본 JSON 및 최종 Markdown 리포트를 저장합니다.
     """
-    results_dir = "results"
+    results_dir = os.path.join(os.path.dirname(__file__), "results")
     os.makedirs(results_dir, exist_ok=True)
     
     json_path = os.path.join(results_dir, f"{date_str}_travel_plan_raw.json")
