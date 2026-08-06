@@ -1,0 +1,16 @@
+# 환경변수 및 API 키 보안 파일
+.env
+.env.local
+
+# 파이썬 바이트코드 및 세션 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 실행 산출물 저장 디렉토리
+results/
+
+# IDE 및 OS 임시 파일
+.vscode/
+.idea/
+.DS_Store
