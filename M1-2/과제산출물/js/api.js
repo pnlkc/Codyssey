@@ -3,9 +3,9 @@
  * 백엔드 REST API 통신 및 콜드스타트 감지
  */
 
-const API_BASE = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1")
+const API_BASE = (window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1"))
   ? "" // 로컬 환경에서는 동일 호스트
-  : (window.API_BASE_URL || ""); // 프로덕션 배포 시 환경변수 주입 URL
+  : (window.API_BASE_URL || "https://codyssey-m1-2.onrender.com"); // 프로덕션 배포 시 Render 백엔드 연결
 
 class ApiClient {
   /** 공통 fetch 래퍼 */

@@ -6,6 +6,12 @@
   <title>Time-Series AI Assistant | 시계열 데이터 기반 맞춤형 AI 비서</title>
   <meta name="description" content="시계열 데이터를 실시간 분석하고 컨텍스트를 주입하여 맞춤형 인사이트와 대화를 제공하는 나만의 AI 비서 서비스">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // 배포 환경에서 Render 백엔드 API 주소 연결
+    if (!window.location.origin.includes("localhost") && !window.location.origin.includes("127.0.0.1")) {
+      window.API_BASE_URL = window.API_BASE_URL || "https://codyssey-m1-2.onrender.com";
+    }
+  </script>
 </head>
 <body>
 
