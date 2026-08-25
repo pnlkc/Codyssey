@@ -16,10 +16,10 @@ class Settings:
     PORT: int = int(os.getenv("PORT", "8000"))
     HOST: str = os.getenv("HOST", "0.0.0.0")
 
-    # CORS 허용 목록
+    # CORS 허용 목록 (기본 화이트리스트)
     ALLOWED_ORIGINS_RAW: str = os.getenv(
         "ALLOWED_ORIGINS",
-        "http://localhost:8000,http://localhost:3000,http://127.0.0.1:5500,http://127.0.0.1:8000,*"
+        "https://codyssey-m1-2.vercel.app,http://localhost:8000,http://localhost:3000,http://127.0.0.1:5500,http://127.0.0.1:8000,*"
     )
     
     @property

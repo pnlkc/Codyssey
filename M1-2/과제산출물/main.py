@@ -19,13 +19,13 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS 미들웨어 등록
+# CORS 미들웨어 등록 (보안 화이트리스트 적용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.ALLOWED_ORIGINS, # Vercel 배포 도메인 및 로컬 개발 도메인 명시적 화이트리스트
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # 필요한 HTTP 메서드만 명시적 허용
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
 )
 
 # 라우터 등록
