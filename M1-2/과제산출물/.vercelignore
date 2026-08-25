@@ -1,0 +1,10 @@
+# Vercel 프론트엔드 배포 시 백엔드 파이썬 빌드 제외
+requirements.txt
+*.py
+models/
+services/
+routers/
+__pycache__/
+.venv/
+service_account.json
+.python-version
