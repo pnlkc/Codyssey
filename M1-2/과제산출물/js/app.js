@@ -281,17 +281,54 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chatInput.value = "";
     appendUserMessage(text);
-    const thinkingElement = appendThinkingIndicator();
+
+    // 실시간 스트리밍을 위한 빈 어시스턴트 말풍선 생성
+    const assistantBubble = document.createElement("div");
+    assistantBubble.className = "message-bubble assistant";
+    assistantBubble.innerHTML = `
+      <div class="avatar">🤖</div>
+      <div class="bubble-content"><span class="typing-cursor">▌</span></div>
+    `;
+    chatMessages.appendChild(assistantBubble);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    const contentDiv = assistantBubble.querySelector(".bubble-content");
+    let accumulatedText = "";
 
     try {
-      const res = await window.ApiClient.sendChatMessage(text, currentConversationId);
-      thinkingElement.remove();
-      currentConversationId = res.conversation_id;
-      appendAssistantMessage(res.reply);
-      loadConversationList();
+      await window.ApiClient.streamChatMessage(
+        text,
+        currentConversationId,
+        [],
+        // 1. 글자/청크 수신 시 즉시 렌더링
+        (chunk) => {
+          accumulatedText += chunk;
+          contentDiv.innerHTML = `${formatMarkdown(accumulatedText)}<span class="typing-cursor">▌</span>`;
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        },
+        // 2. 세션 메타데이터 수신 시
+        (meta) => {
+          if (meta.conversation_id) {
+            currentConversationId = meta.conversation_id;
+          }
+        },
+        // 3. 스트리밍 완료 시
+        (done) => {
+          if (done.conversation_id) {
+            currentConversationId = done.conversation_id;
+          }
+          // 타이핑 커서 제거 및 최종 포맷 확정
+          contentDiv.innerHTML = formatMarkdown(accumulatedText);
+          loadConversationList();
+        },
+        // 4. 에러 발생 시
+        (err) => {
+          console.error("스트리밍 에러:", err);
+          contentDiv.innerHTML = `⚠️ 오류가 발생했습니다: ${escapeHtml(err.message)}`;
+        }
+      );
     } catch (error) {
-      thinkingElement.remove();
-      appendAssistantMessage(`⚠️ 오류가 발생했습니다: ${error.message}`);
+      contentDiv.innerHTML = `⚠️ 오류가 발생했습니다: ${escapeHtml(error.message)}`;
     }
   }
 
@@ -315,22 +352,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  function appendThinkingIndicator() {
-    const div = document.createElement("div");
-    div.className = "message-bubble assistant";
-    div.innerHTML = `
-      <div class="avatar">🤖</div>
-      <div class="bubble-content thinking-indicator">
-        <span class="thinking-dot"></span>
-        <span class="thinking-dot"></span>
-        <span class="thinking-dot"></span>
-      </div>
-    `;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    return div;
   }
 
   // =========================================================================

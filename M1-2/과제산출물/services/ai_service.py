@@ -1,5 +1,6 @@
 import logging
 import json
+import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from config import settings
@@ -163,14 +164,15 @@ class AIService:
         else:
             full_prompt = last_user_msg
 
-        # Flash 계열 모델 순차 폴백 체인 (Google 공식 권장 모델 최우선)
+        # Flash-lite 최신순 모델 우선순위 체인 (실제 API 검증 완료)
         candidate_models = [
-            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (기본: gemini-3.6-flash)
-            "gemini-3.6-flash",           # Google 공식 권장 1순위 Flash 모델
-            "gemini-3.5-flash",           # 검증 완료 2순위 초고속 Flash 모델
-            "gemini-3.7-flash",           # 3.7 Flash 모델
-            "gemini-flash-latest",        # Flash 최신 별칭
-            "gemini-3.1-flash-lite",      # 경량 Flash
+            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (기본: gemini-3.5-flash-lite)
+            "gemini-3.5-flash-lite",      # Flash Lite 최신 3.5 세대 (검증 완료)
+            "gemini-flash-lite-latest",   # Flash Lite 최신 별칭 (검증 완료)
+            "gemini-3.1-flash-lite",      # 3.1 세대 Flash Lite (검증 완료)
+            "gemini-2.5-flash-lite",      # 2.5 세대 Flash Lite
+            "gemini-3.5-flash",           # 표준 3.5 Flash
+            "gemini-3.6-flash",           # 표준 3.6 Flash
         ]
         # 중복 제거 (순서 보존)
         models_to_try = list(dict.fromkeys(candidate_models))
@@ -178,26 +180,160 @@ class AIService:
         last_err = None
         for model_name in models_to_try:
             try:
-                logger.info(f"Gemini Flash 비동기 호출 시도: {model_name}")
+                logger.info(f"Gemini Flash-Lite 비동기 호출 시도: {model_name}")
                 model = genai.GenerativeModel(
                     model_name=model_name,
                     system_instruction=system_prompt
                 )
                 
-                # 모델별 최대 6초 타임아웃 설정 (무한 지연 방지)
+                # 모델별 15초 타임아웃 설정
                 response = await asyncio.wait_for(
                     model.generate_content_async(full_prompt),
-                    timeout=6.0
+                    timeout=15.0
                 )
                 
                 if response and response.text:
-                    logger.info(f"🎉 Gemini Flash 응답 수신 성공: {model_name}")
+                    logger.info(f"🎉 Gemini Flash-Lite 응답 수신 성공: {model_name}")
                     return response.text, model_name
             except Exception as e:
-                logger.warning(f"Flash 모델 '{model_name}' 지연 또는 오류 ({e}) -> 다음 Flash 모델로 즉시 전환...")
+                logger.warning(f"Flash-Lite 모델 '{model_name}' 지연 또는 오류 ({e}) -> 다음 모델 전환...")
                 last_err = e
 
         raise last_err or RuntimeError("모든 Gemini Flash 계열 모델 호출에 실패했습니다.")
+
+    @classmethod
+    async def stream_chat(cls, request: ChatRequest):
+        """SSE (Server-Sent Events) 글자/토큰 단위 실시간 스트리밍 제너레이터"""
+        import asyncio
+        import json
+
+        # 1. 시계열 데이터 요약 생성 및 컨텍스트 주입
+        summary = await AnalyticsService.get_summary()
+        system_prompt = cls._build_system_prompt(summary)
+
+        # 2. 대화 히스토리 구성
+        conversation_id = request.conversation_id or f"conv_{uuid.uuid4().hex[:8]}"
+        existing_conv = await FirestoreService.get_conversation_by_id(conversation_id)
+
+        messages_history = []
+        if existing_conv and "messages" in existing_conv:
+            messages_history = list(existing_conv["messages"])
+        elif request.history:
+            messages_history = [m.model_dump() for m in request.history]
+
+        user_message_dict = {
+            "role": "user",
+            "content": request.message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        messages_history.append(user_message_dict)
+
+        # 3. 프론트엔드에 세션 메타데이터 첫 청크 즉시 전송
+        init_meta = {
+            "type": "meta",
+            "conversation_id": conversation_id,
+            "summary": {
+                "period": summary.period,
+                "count": summary.count,
+                "metrics": summary.metrics.model_dump(),
+                "trend": summary.trend
+            }
+        }
+        yield f"data: {json.dumps(init_meta, ensure_ascii=False)}\n\n"
+
+        # 4. 실시간 토큰 스트리밍 생성
+        full_reply_text = ""
+        used_model = "offline-mock"
+
+        if settings.GEMINI_API_KEY:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=settings.GEMINI_API_KEY)
+
+                prompt_with_history = ""
+                for m in messages_history[:-1]:
+                    role_name = "사용자" if m["role"] == "user" else "AI 비서"
+                    prompt_with_history += f"{role_name}: {m['content']}\n"
+                last_user_msg = messages_history[-1]["content"]
+                full_prompt = f"이전 대화 맥락:\n{prompt_with_history}\n현재 사용자 질문: {last_user_msg}" if prompt_with_history else last_user_msg
+
+                candidate_models = [
+                    settings.GEMINI_MODEL_NAME,
+                    "gemini-3.1-flash-lite",
+                    "gemini-flash-lite-latest",
+                    "gemini-3.5-flash-lite",
+                    "gemini-2.5-flash-lite",
+                    "gemini-3.5-flash",
+                    "gemini-3.6-flash",
+                    "gemini-3.7-flash"
+                ]
+                models_to_try = list(dict.fromkeys(candidate_models))
+
+                stream_success = False
+                for model_name in models_to_try:
+                    try:
+                        logger.info(f"⚡ 실시간 토큰 스트리밍 시작 ({model_name})")
+                        model = genai.GenerativeModel(
+                            model_name=model_name,
+                            system_instruction=system_prompt
+                        )
+                        response_stream = await model.generate_content_async(full_prompt, stream=True)
+                        used_model = model_name
+
+                        async for chunk in response_stream:
+                            if chunk and chunk.text:
+                                full_reply_text += chunk.text
+                                chunk_payload = {"type": "chunk", "text": chunk.text}
+                                yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n"
+                                await asyncio.sleep(0.01) # 부드러운 토큰 스트리밍
+
+                        stream_success = True
+                        break
+                    except Exception as model_err:
+                        logger.warning(f"스트리밍 모델 '{model_name}' 실패 ({model_err}) -> 다음 모델 시도...")
+
+                if not stream_success:
+                    raise RuntimeError("모든 스트리밍 모델 시도 실패")
+
+            except Exception as e:
+                logger.error(f"Gemini 스트리밍 에러: {e}, 로컬 Mock 스트리밍 전환")
+                mock_text = cls._generate_mock_reply(request.message, summary)
+                used_model = "gemini-fallback-mock"
+                for char in mock_text:
+                    full_reply_text += char
+                    chunk_payload = {"type": "chunk", "text": char}
+                    yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n"
+                    await asyncio.sleep(0.015)
+        else:
+            mock_text = cls._generate_mock_reply(request.message, summary)
+            used_model = "local-mock"
+            for char in mock_text:
+                full_reply_text += char
+                chunk_payload = {"type": "chunk", "text": char}
+                yield f"data: {json.dumps(chunk_payload, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(0.015)
+
+        # 5. 대화 내용 영속화 (Firestore에 완성된 대화 저장)
+        assistant_message_dict = {
+            "role": "assistant",
+            "content": full_reply_text,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        messages_history.append(assistant_message_dict)
+
+        await FirestoreService.save_or_update_conversation(
+            conv_id=conversation_id,
+            title=request.message[:25] + ("..." if len(request.message) > 25 else ""),
+            messages=messages_history
+        )
+
+        # 6. 스트리밍 종료 신호
+        done_payload = {
+            "type": "done",
+            "conversation_id": conversation_id,
+            "model_used": used_model
+        }
+        yield f"data: {json.dumps(done_payload, ensure_ascii=False)}\n\n"
 
     @classmethod
     async def _call_openai(cls, system_prompt: str, history: List[Dict[str, Any]]) -> str:

@@ -448,8 +448,27 @@ canvas#timeSeriesChart {
 }
 
 .message-bubble.assistant .bubble-content {
+  background: var(--bg-surface);
+  color: var(--text-primary);
   border-bottom-left-radius: var(--radius-sm);
 }
+
+/* 실시간 스트리밍 타이핑 커서 */
+.typing-cursor {
+  display: inline-block;
+  color: var(--accent-primary);
+  font-weight: 700;
+  animation: blinkCursor 0.8s infinite;
+  margin-left: 2px;
+  vertical-align: baseline;
+}
+
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+
 
 .bubble-content p {
   margin-bottom: 0.5rem;

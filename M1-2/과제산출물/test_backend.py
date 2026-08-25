@@ -108,7 +108,14 @@ def test_all():
     assert "reply" in chat_res
     assert "conversation_id" in chat_res
     assert chat_res["summary_applied"] is not None
-    print(f"[PASS] 5. POST /api/chat (컨텍스트 주입 AI 대화) 통과 (응답 모델: {chat_res['model_used']})")
+    print(f"[PASS] 5-1. POST /api/chat (컨텍스트 주입 AI 대화) 통과 (응답 모델: {chat_res['model_used']})")
+
+    # 5-2. AI Chat SSE Stream API
+    res = client.post("/api/chat/stream", json=chat_payload)
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
+    assert "data: " in res.text
+    print("[PASS] 5-2. POST /api/chat/stream (SSE 실시간 토큰 스트리밍) 통과")
 
     print("\n[SUCCESS] 모든 백엔드 엔드포인트 통합 검증을 100% 성공적으로 통과했습니다!")
 

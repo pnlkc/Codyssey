@@ -92,7 +92,7 @@ class ApiClient {
     });
   }
 
-  // --- AI Chat API ---
+  // --- AI Chat API (단일 응답 & 실시간 SSE 스트리밍) ---
   static async sendChatMessage(message, conversationId = null, history = []) {
     return this.request("/api/chat", {
       method: "POST",
@@ -102,6 +102,60 @@ class ApiClient {
         history,
       }),
     });
+  }
+
+  /** 실시간 SSE 글자/토큰 단위 스트리밍 호출 */
+  static async streamChatMessage(message, conversationId = null, history = [], onChunk, onMeta, onDone, onError) {
+    const url = `${API_BASE}/api/chat/stream`;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          conversation_id: conversationId,
+          history,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop(); // 아직 완료되지 않은 잔여 버퍼 보존
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.type === "meta" && onMeta) {
+                onMeta(data);
+              } else if (data.type === "chunk" && onChunk) {
+                onChunk(data.text);
+              } else if (data.type === "done" && onDone) {
+                onDone(data);
+              }
+            } catch (jsonErr) {
+              // 파싱 실패 무시
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (onError) onError(err);
+      else throw err;
+    }
   }
 }
 

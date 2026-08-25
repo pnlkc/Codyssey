@@ -61,10 +61,18 @@ class FirestoreService:
             except Exception as e:
                 logger.error(f"Firestore get_all_data 에러: {e}")
         
-        # Fallback
+        # Firebase 미연동 오프라인 / 테스트 환경 Fallback
+        if len(_memory_data) == 0 and os.path.exists(SAMPLE_DATA_PATH):
+            try:
+                with open(SAMPLE_DATA_PATH, "r", encoding="utf-8") as f:
+                    items = json.load(f)
+                    for item in items:
+                        _memory_data[item["id"]] = item
+            except Exception as e:
+                logger.error(f"오프라인 샘플 데이터 로드 실패: {e}")
+
         items = list(_memory_data.values())
-        items.sort(key=lambda x: x.get("date", ""))
-        return items
+        return sorted(items, key=lambda x: x.get("date", ""))
 
     @staticmethod
     async def get_data_by_id(data_id: str) -> Optional[Dict[str, Any]]:
@@ -205,6 +213,8 @@ class FirestoreService:
 
         # Fallback
         return _memory_conversations.get(conv_id)
+
+    get_conversation = get_conversation_by_id
 
     @staticmethod
     async def save_or_update_conversation(conv_id: Optional[str], title: str, messages: List[Dict[str, Any]]) -> Dict[str, Any]:

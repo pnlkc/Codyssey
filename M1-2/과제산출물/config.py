@@ -40,7 +40,7 @@ class Settings:
         cleaned = self.GEMINI_API_KEY_RAW.strip().strip("'\"")
         return cleaned if cleaned and cleaned != "your_gemini_api_key_here" else None
 
-    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.6-flash").strip().strip("'\"")
+    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.5-flash-lite").strip().strip("'\"")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 
     # Firebase 설정
