@@ -8,8 +8,12 @@ from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("config")
 
-# .env 파일 로드
-load_dotenv()
+# .env 파일 명시적 절대경로 로드
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_file_path = os.path.join(current_dir, ".env")
+if os.path.exists(env_file_path):
+    load_dotenv(env_file_path, override=True)
+load_dotenv(override=True)
 
 class Settings:
     # 포트 및 호스트
@@ -27,12 +31,23 @@ class Settings:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS_RAW.split(",") if origin.strip()]
 
     # AI API Keys & Models
-    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
-    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.7-flash")
+    GEMINI_API_KEY_RAW: Optional[str] = os.getenv("GEMINI_API_KEY")
+    
+    @property
+    def GEMINI_API_KEY(self) -> Optional[str]:
+        if not self.GEMINI_API_KEY_RAW:
+            return None
+        cleaned = self.GEMINI_API_KEY_RAW.strip().strip("'\"")
+        return cleaned if cleaned and cleaned != "your_gemini_api_key_here" else None
+
+    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.7-flash").strip().strip("'\"")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 
     # Firebase 설정
-    FIREBASE_SERVICE_ACCOUNT_PATH: Optional[str] = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "service_account.json")
+    FIREBASE_SERVICE_ACCOUNT_PATH: Optional[str] = os.getenv(
+        "FIREBASE_SERVICE_ACCOUNT_PATH",
+        os.path.join(current_dir, "service_account.json")
+    )
     FIREBASE_SERVICE_ACCOUNT_JSON: Optional[str] = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
 
 settings = Settings()
