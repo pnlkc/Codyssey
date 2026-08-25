@@ -120,9 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // 요약 지표 반영
       summaryPeriod.textContent = summary.period || "-";
       metricCount.textContent = `${summary.count.toLocaleString()}개`;
-      metricAverage.textContent = `${summary.metrics.average.toLocaleString()}`;
-      metricMax.textContent = `${summary.metrics.max.toLocaleString()}`;
-      metricTotal.textContent = `${summary.metrics.total.toLocaleString()}`;
+      metricAverage.textContent = `${Math.round(summary.metrics.average).toLocaleString()}원`;
+      metricMax.textContent = `${Math.round(summary.metrics.max).toLocaleString()}원`;
+      metricTotal.textContent = `${Math.round(summary.metrics.total).toLocaleString()}원`;
       trendText.textContent = summary.trend || "데이터 분석 완료";
 
       // 트렌드 아이콘/색상 동적 조정

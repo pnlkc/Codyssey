@@ -102,21 +102,25 @@ class TimeSeriesChart {
 
     const yTicks = 4;
     for (let i = 0; i <= yTicks; i++) {
-      const yVal = minVal + (range / yTicks) * i;
-      const yPos = padding.top + chartHeight - (chartHeight / yTicks) * i;
+      const yVal = minVal + (range / yTicks) * (yTicks - i);
+      const yPos = padding.top + (chartHeight / yTicks) * i;
 
       ctx.beginPath();
       ctx.moveTo(padding.left, yPos);
       ctx.lineTo(width - padding.right, yPos);
       ctx.stroke();
 
-      ctx.fillText(Math.round(yVal).toLocaleString(), padding.left - 8, yPos + 4);
+      // 금액 표시 (예: 75,000원)
+      const labelText = yVal >= 1000 ? `${Math.round(yVal).toLocaleString()}원` : `${Math.round(yVal)}`;
+      ctx.fillText(labelText, padding.left - 8, yPos + 4);
     }
 
     // 2. 데이터 좌표 계산
+    const stepX = chartWidth / (this.data.length - 1 || 1);
     const points = this.data.map((d, i) => {
-      const x = padding.left + (chartWidth / (this.data.length - 1 || 1)) * i;
-      const y = padding.top + chartHeight - ((Number(d.value) - minVal) / range) * chartHeight;
+      const x = padding.left + i * stepX;
+      const val = Number(d.value) || 0;
+      const y = padding.top + chartHeight - ((val - minVal) / range) * chartHeight;
       return { x, y, ...d };
     });
 
@@ -187,10 +191,11 @@ class TimeSeriesChart {
       ctx.stroke();
 
       // 툴팁 박스
-      const tooltipText = `${p.date}: ${Number(p.value).toLocaleString()} (${p.memo || "기록"})`;
+      const categoryTag = p.category ? `[${p.category}] ` : "";
+      const tooltipText = `${categoryTag}${p.date}: ${Number(p.value).toLocaleString()}원 (${p.memo || "거래"})`;
       ctx.font = "bold 11px sans-serif";
       const textWidth = ctx.measureText(tooltipText).width;
-      const boxW = textWidth + 18;
+      const boxW = textWidth + 20;
       const boxH = 26;
       let boxX = p.x - boxW / 2;
       let boxY = p.y - 36;
@@ -199,14 +204,17 @@ class TimeSeriesChart {
       if (boxX + boxW > width - 10) boxX = width - boxW - 10;
       if (boxY < 10) boxY = p.y + 12;
 
-      ctx.fillStyle = isDark ? "#1f2937" : "#0f172a";
+      ctx.fillStyle = isDark ? "#1e293b" : "#0f172a";
+      ctx.strokeStyle = isDark ? "#3b82f6" : "#2563eb";
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+      ctx.roundRect(boxX, boxY, boxW, boxH, 4);
       ctx.fill();
+      ctx.stroke();
 
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
-      ctx.fillText(tooltipText, boxX + 9, boxY + 17);
+      ctx.fillText(tooltipText, boxX + 10, boxY + 17);
     }
   }
 }
