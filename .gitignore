@@ -12,14 +12,15 @@ results/
 
 # 3. 환경 변수 및 자격 증명 키
 .env
-.env.local
-.env.development
-.env.production
-.env.staging
+.env.*
 *.pem
 *.key
 id_rsa
 google-services.json
+service_account.json
+service-account.json
+*service_account*.json
+firebase_credentials.json
 
 # 4. 패키지 및 가상 환경
 node_modules/

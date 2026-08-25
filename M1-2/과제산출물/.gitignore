@@ -1,0 +1,28 @@
+# Environment variables & API keys
+.env
+.env.local
+.env.*.local
+service_account.json
+service-account.json
+firebase_credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel

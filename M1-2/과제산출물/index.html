@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time-Series AI Assistant | 시계열 데이터 기반 맞춤형 AI 비서</title>
+  <meta name="description" content="시계열 데이터를 실시간 분석하고 컨텍스트를 주입하여 맞춤형 인사이트와 대화를 제공하는 나만의 AI 비서 서비스">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 콜드스타트 완화 안내 배너 (Render 무료티어 슬립 대비) -->
+  <div class="coldstart-banner" id="coldstartBanner">
+    <span>⚡ 서버를 깨우는 중입니다. 잠시만 기다려 주시면 즉시 모든 기능이 연결됩니다.</span>
+  </div>
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="brand-icon">📈</div>
+      <div>
+        <h1 class="brand-title">AI Time-Series Assistant</h1>
+        <div class="brand-subtitle">데이터 분석 및 컨텍스트 주입형 맞춤 비서</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-badge" id="serverStatusBadge">
+        <span class="status-dot"></span>
+        <span>연결 확인 중...</span>
+      </div>
+      <a href="/docs" target="_blank" class="btn-secondary" style="text-decoration:none; font-size:0.75rem; padding:0.35rem 0.65rem;">
+        📑 Swagger API
+      </a>
+      <button class="btn-icon" id="themeToggleBtn" title="다크/라이트 모드 전환" aria-label="테마 전환">
+        🌙
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 대시보드 컨테이너 -->
+  <main class="app-container">
+    
+    <!-- 좌측 사이드바: 데이터 요약 & 대화 기록 -->
+    <aside class="sidebar">
+      
+      <!-- 1. 데이터 요약 통계 카드 -->
+      <section class="card" id="summaryCard">
+        <div class="card-header">
+          <h2 class="card-title">📊 데이터 요약 (Summary)</h2>
+          <span style="font-size:0.75rem; color:var(--text-muted);" id="summaryPeriod">2025 ~ 2026</span>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">총 레코드 수</div>
+            <div class="metric-value" id="metricCount">0개</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">전체 평균</div>
+            <div class="metric-value" id="metricAverage">0</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">역대 최고치</div>
+            <div class="metric-value" id="metricMax" style="color:var(--accent-primary);">0</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">누적 합계</div>
+            <div class="metric-value" id="metricTotal">0</div>
+          </div>
+        </div>
+
+        <div class="trend-badge-box" id="trendBadgeBox">
+          <span>🚀</span>
+          <span id="trendText">데이터 추세를 분석하는 중...</span>
+        </div>
+      </section>
+
+      <!-- 2. 대화 기록 목록 패널 -->
+      <section class="card" id="conversationPanel">
+        <div class="card-header">
+          <h2 class="card-title">💬 이전 대화 기록</h2>
+          <button class="btn-primary" id="newChatBtn" style="padding:0.3rem 0.75rem; font-size:0.75rem;">
+            + 새 대화
+          </button>
+        </div>
+        <div class="conversation-list" id="conversationList">
+          <!-- 대화 세션 목록이 동적으로 렌더링됩니다 -->
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- 우측 메인 영역: 시계열 차트, AI 채팅, 데이터 관리 테이블 -->
+    <section class="main-content">
+
+      <!-- 3. 시계열 데이터 시각화 차트 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">📈 시계열 트렌드 시각화</h2>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-secondary" id="exportCsvBtn" style="font-size:0.75rem; padding:0.3rem 0.6rem;">CSV 내보내기</button>
+            <button class="btn-secondary" id="exportJsonBtn" style="font-size:0.75rem; padding:0.3rem 0.6rem;">JSON 내보내기</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="timeSeriesChart"></canvas>
+        </div>
+      </section>
+
+      <!-- 4. 데이터 기반 AI 채팅 인터페이스 -->
+      <section class="card chat-section">
+        <div class="card-header">
+          <h2 class="card-title">🤖 AI 비서와의 대화 (Context-Injected)</h2>
+          <span style="font-size:0.75rem; color:var(--text-muted);">실시간 요약 데이터 기반 맞춤 답변</span>
+        </div>
+
+        <!-- 채팅 메시지 창 -->
+        <div class="chat-messages" id="chatMessages">
+          <div class="message-bubble assistant">
+            <div class="avatar">🤖</div>
+            <div class="bubble-content">
+              <p>안녕하세요! 귀하의 시계열 데이터를 실시간으로 파악하고 있는 <strong>AI 데이터 비서</strong>입니다.</p>
+              <p>데이터의 추세, 최고 실적, 기간별 비교 등 무엇이든 자연어로 편하게 물어보세요! 😊</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 추천 질문 칩 (Quick Prompt Chips) -->
+        <div class="prompt-chips" id="promptChips">
+          <button class="chip-btn">이번 달 실적이 어때?</button>
+          <button class="chip-btn">가장 실적이 좋았던 때는 언제야?</button>
+          <button class="chip-btn">최근 데이터 추세와 통계를 요약해줘</button>
+          <button class="chip-btn">평균 대비 최근 성과는 어때?</button>
+        </div>
+
+        <!-- 입력창 -->
+        <div class="chat-input-box">
+          <input type="text" id="chatInput" class="chat-input" placeholder="데이터에 대해 질문해 보세요... (Enter 전송)" autocomplete="off">
+          <button class="btn-primary" id="sendBtn">
+            <span>전송</span>
+            <span>➤</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 5. 데이터 관리 (CRUD) 테이블 -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">📋 데이터 관리 (CRUD)</h2>
+          <button class="btn-primary" id="openAddModalBtn" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
+            + 새 데이터 추가
+          </button>
+        </div>
+
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>날짜 (Date)</th>
+                <th>수치 (Value)</th>
+                <th>카테고리</th>
+                <th>메모 (Memo)</th>
+                <th style="width:110px;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody">
+              <!-- 데이터 행이 동적으로 렌더링됩니다 -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </section>
+
+  </main>
+
+  <!-- 데이터 추가/수정 모달 -->
+  <div class="modal-overlay" id="dataModal">
+    <div class="modal-card">
+      <div class="card-header">
+        <h3 class="card-title" id="dataModalTitle">새 데이터 추가</h3>
+        <button class="btn-icon" id="closeModalBtn" style="width:28px; height:28px;">✕</button>
+      </div>
+      <form id="dataForm">
+        <div class="form-group">
+          <label for="inputDate">날짜 (YYYY-MM-DD) *</label>
+          <input type="date" id="inputDate" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="inputValue">수치 (Value) *</label>
+          <input type="number" step="any" id="inputValue" class="form-input" placeholder="예: 850" required>
+        </div>
+        <div class="form-group">
+          <label for="inputCategory">카테고리</label>
+          <select id="inputCategory" class="form-input">
+            <option value="개발">개발</option>
+            <option value="기획">기획</option>
+            <option value="설계">설계</option>
+            <option value="테스트">테스트</option>
+            <option value="UI">UI/UX</option>
+            <option value="DB">DB</option>
+            <option value="데브옵스">데브옵스</option>
+            <option value="문서화">문서화</option>
+            <option value="학습">학습</option>
+            <option value="일반">일반</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="inputMemo">메모 (Memo) *</label>
+          <input type="text" id="inputMemo" class="form-input" placeholder="예: 일일 마일스톤 완료" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="cancelModalBtn">취소</button>
+          <button type="submit" class="btn-primary">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- 스크립트 로드 -->
+  <script src="js/api.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
