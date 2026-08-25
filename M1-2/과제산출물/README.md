@@ -6,6 +6,16 @@
 
 ---
 
+## 🌐 실제 배포 서비스 URL
+
+| 서비스 영역 | 배포 플랫폼 | 접속 URL | 설명 |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web** | **Vercel** | [https://codyssey-m1-2.vercel.app](https://codyssey-m1-2.vercel.app) | 대시보드 웹 서비스 (차트/채팅/CRUD) |
+| **Backend API** | **Render** | [https://codyssey-m1-2.onrender.com](https://codyssey-m1-2.onrender.com) | FastAPI REST API 서버 |
+| **Swagger UI** | **Vercel / Render** | [https://codyssey-m1-2.vercel.app/docs](https://codyssey-m1-2.vercel.app/docs)<br>[https://codyssey-m1-2.onrender.com/docs](https://codyssey-m1-2.onrender.com/docs) | 대화형 OpenAPI 명세 및 테스트 (양쪽 모두 지원) |
+
+---
+
 ## 🌟 핵심 기능 및 특징
 
 1. **📊 시계열 데이터 관리 (CRUD)**
