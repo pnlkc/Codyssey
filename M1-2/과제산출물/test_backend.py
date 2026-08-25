@@ -21,6 +21,11 @@ def test_all():
     assert res.status_code == 200, f"Health check failed: {res.text}"
     print("[PASS] 1. GET /api/health 통과")
 
+    # 1-2. Reset & Reseed Sample Data
+    res = client.post("/api/data/reset-seed")
+    assert res.status_code == 200, f"Reset-seed failed: {res.text}"
+    print(f"[PASS] 1-2. POST /api/data/reset-seed 통과 (동기화 완료)")
+
     # 2. Data Summary
     res = client.get("/api/data/summary")
     assert res.status_code == 200, f"Summary failed: {res.text}"

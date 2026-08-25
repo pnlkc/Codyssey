@@ -75,6 +75,55 @@ class FirestoreService:
         return sorted(items, key=lambda x: x.get("date", ""))
 
     @staticmethod
+    async def reseed_sample_data() -> Dict[str, Any]:
+        """Firestore의 data 컬렉션을 최신 sample_timeseries.json 데이터로 전면 교체/재동기화"""
+        global _memory_data
+        _memory_data.clear()
+
+        if not os.path.exists(SAMPLE_DATA_PATH):
+            raise FileNotFoundError("샘플 데이터 파일을 찾을 수 없습니다.")
+
+        with open(SAMPLE_DATA_PATH, "r", encoding="utf-8") as f:
+            items = json.load(f)
+
+        for item in items:
+            _memory_data[item["id"]] = item
+
+        if firebase_initialized and db:
+            try:
+                # 1. 기존 문서 모두 조회 및 배치 삭제
+                docs = db.collection("data").stream()
+                del_batch = db.batch()
+                del_count = 0
+                for doc in docs:
+                    del_batch.delete(doc.reference)
+                    del_count += 1
+                    if del_count % 400 == 0:
+                        del_batch.commit()
+                        del_batch = db.batch()
+                del_batch.commit()
+                logger.info(f"기존 Firestore 데이터 {del_count}개 삭제 완료")
+
+                # 2. 신규 데이터 배치 등록
+                add_batch = db.batch()
+                add_count = 0
+                for item in items:
+                    doc_ref = db.collection("data").document(item["id"])
+                    add_batch.set(doc_ref, item)
+                    add_count += 1
+                    if add_count % 400 == 0:
+                        add_batch.commit()
+                        add_batch = db.batch()
+                add_batch.commit()
+                logger.info(f"🎉 Firestore 신규 데이터 {add_count}개 재시딩 완료!")
+                return {"status": "success", "reseeded_count": add_count, "deleted_count": del_count}
+            except Exception as e:
+                logger.error(f"Firestore reseed_sample_data 실패: {e}")
+                raise e
+
+        return {"status": "success (offline fallback)", "reseeded_count": len(items)}
+
+    @staticmethod
     async def get_data_by_id(data_id: str) -> Optional[Dict[str, Any]]:
         """특정 ID의 데이터 조회"""
         if firebase_initialized and db:

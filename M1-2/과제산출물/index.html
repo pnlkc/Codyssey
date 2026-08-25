@@ -153,9 +153,14 @@
       <section class="card">
         <div class="card-header">
           <h2 class="card-title">📋 데이터 관리 (CRUD)</h2>
-          <button class="btn-primary" id="openAddModalBtn" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
-            + 새 데이터 추가
-          </button>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn-secondary" id="reseedDataBtn" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Firestore를 최신 샘플 데이터로 동기화/초기화합니다">
+              🔄 샘플 데이터로 리셋
+            </button>
+            <button class="btn-primary" id="openAddModalBtn" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
+              + 새 데이터 추가
+            </button>
+          </div>
         </div>
 
         <div class="data-table-wrapper">

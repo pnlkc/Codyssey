@@ -24,7 +24,22 @@ def run_seed():
         logger.info("로컬 Fallback 모드에서는 sample_timeseries.json 파일이 자동으로 사용됩니다.")
         return
 
-    logger.info("Firestore 'data' 컬렉션에 데이터 시딩을 시작합니다...")
+    logger.info("Firestore 'data' 컬렉션의 기존 데이터를 정리하고 새 데이터 시딩을 시작합니다...")
+    
+    # 1. 기존 문서 삭제
+    existing_docs = db.collection("data").stream()
+    del_batch = db.batch()
+    del_count = 0
+    for doc in existing_docs:
+        del_batch.delete(doc.reference)
+        del_count += 1
+        if del_count % 400 == 0:
+            del_batch.commit()
+            del_batch = db.batch()
+    del_batch.commit()
+    logger.info(f"기존 Firestore 데이터 {del_count}개 삭제 완료")
+
+    # 2. 신규 데이터 일괄 등록
     batch = db.batch()
     batch_count = 0
     total_written = 0
@@ -36,7 +51,6 @@ def run_seed():
         batch_count += 1
         total_written += 1
 
-        # Firestore 배치는 최대 500개까지 지원
         if batch_count >= 400:
             batch.commit()
             logger.info(f"중간 커밋: {total_written}개 완료")

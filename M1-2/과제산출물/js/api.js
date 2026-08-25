@@ -77,6 +77,12 @@ class ApiClient {
     });
   }
 
+  static async reseedData() {
+    return this.request("/api/data/reset-seed", {
+      method: "POST",
+    });
+  }
+
   // --- Conversation APIs ---
   static async getConversations() {
     return this.request("/api/conversations");

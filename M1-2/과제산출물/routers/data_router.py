@@ -11,6 +11,15 @@ async def get_data_summary():
     """저장된 시계열 데이터의 기간, 총합, 평균, 최고/최저치 및 최근 추세(Trend)를 분석하여 반환합니다."""
     return await AnalyticsService.get_summary()
 
+@router.post("/reset-seed", summary="기본 샘플 데이터로 DB 리셋 및 재시딩")
+async def reset_sample_data():
+    """Firestore의 data 컬렉션을 최신 sample_timeseries.json의 데이터로 깔끔하게 초기화/재동기화합니다."""
+    try:
+        res = await FirestoreService.reseed_sample_data()
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"데이터 리셋 실패: {str(e)}")
+
 @router.post("", response_model=DataResponse, status_code=status.HTTP_201_CREATED, summary="새 데이터 등록")
 async def create_data(payload: DataCreate):
     """새로운 일일 시계열 데이터(date, value, memo, category)를 Firestore에 등록합니다."""

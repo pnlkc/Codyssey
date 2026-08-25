@@ -247,6 +247,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 샘플 데이터로 리셋/재시딩 버튼
+  const reseedDataBtn = document.getElementById("reseedDataBtn");
+  if (reseedDataBtn) {
+    reseedDataBtn.addEventListener("click", async () => {
+      if (!confirm("Firestore 데이터를 최신 1년치 삼성전자 실제 종가 샘플 데이터로 초기화/동기화하시겠습니까?")) return;
+      try {
+        reseedDataBtn.disabled = true;
+        reseedDataBtn.textContent = "동기화 중...";
+        const res = await window.ApiClient.reseedData();
+        showToast(`데이터 동기화 완료! (${res.reseeded_count || 122}개 등록)`);
+        await Promise.all([loadSummaryAndChart(), loadDataTable()]);
+      } catch (err) {
+        showToast(`동기화 실패: ${err.message}`, "error");
+      } finally {
+        reseedDataBtn.disabled = false;
+        reseedDataBtn.textContent = "🔄 샘플 데이터로 리셋";
+      }
+    });
+  }
+
   // =========================================================================
   // 5. AI 채팅 인터랙션
   // =========================================================================
