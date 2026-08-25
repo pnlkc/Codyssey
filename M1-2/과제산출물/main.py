@@ -36,10 +36,11 @@ app.include_router(chat_router)
 # 헬스체크 엔드포인트 (Render 콜드스타트 완화 및 가동 상태 확인용)
 @app.api_route("/api/health", methods=["GET", "HEAD"], tags=["System"])
 async def health_check():
+    ai_desc = f"Google Gemini ({settings.GEMINI_MODEL_NAME})" if settings.GEMINI_API_KEY else "AI Engine Ready"
     return {
         "status": "online",
         "firebase_connected": firebase_initialized,
-        "ai_engine": f"Gemini ({settings.GEMINI_MODEL_NAME})" if settings.GEMINI_API_KEY else ("OpenAI GPT-4o-mini" if settings.OPENAI_API_KEY else "Local Mock Engine"),
+        "ai_engine": ai_desc,
         "version": "1.0.0"
     }
 

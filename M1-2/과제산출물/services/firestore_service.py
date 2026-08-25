@@ -18,27 +18,12 @@ except ImportError:
 
 logger = logging.getLogger("firestore_service")
 
-# 로컬 샘플 데이터 파일 경로
+# 로컬 샘플 데이터 파일 경로 (최초 1회 자동 시딩용)
 SAMPLE_DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sample_timeseries.json")
 
-# In-Memory Fallback 스토리지 (Firebase 미연동 시 활용)
+# In-Memory 캐시 (Firestore 비상 시 또는 단위 테스트용)
 _memory_data: Dict[str, Dict[str, Any]] = {}
 _memory_conversations: Dict[str, Dict[str, Any]] = {}
-
-def _init_local_fallback():
-    """로컬 데이터셋을 메모리에 로드"""
-    global _memory_data
-    if os.path.exists(SAMPLE_DATA_PATH):
-        try:
-            with open(SAMPLE_DATA_PATH, "r", encoding="utf-8") as f:
-                items = json.load(f)
-                for item in items:
-                    _memory_data[item["id"]] = item
-            logger.info(f"로컬 Fallback 스토리지: {len(_memory_data)}개 샘플 데이터 로드 완료")
-        except Exception as e:
-            logger.error(f"샘플 데이터 로드 실패: {e}")
-
-_init_local_fallback()
 
 class FirestoreService:
     """Firestore 데이터베이스 연동 및 로컬 Fallback 서비스"""
@@ -57,6 +42,21 @@ class FirestoreService:
                     d = doc.to_dict()
                     d["id"] = doc.id
                     result.append(d)
+                
+                # Firestore data 컬렉션이 비어있는 경우 샘플 데이터 120개 자동 시딩
+                if len(result) == 0 and os.path.exists(SAMPLE_DATA_PATH):
+                    logger.info("Firestore 'data' 컬렉션이 비어있음 -> 초기 120개 샘플 데이터 자동 시딩 시작...")
+                    with open(SAMPLE_DATA_PATH, "r", encoding="utf-8") as f:
+                        items = json.load(f)
+                    
+                    batch = db.batch()
+                    for item in items:
+                        doc_ref = db.collection("data").document(item["id"])
+                        batch.set(doc_ref, item)
+                    batch.commit()
+                    logger.info(f"🎉 Firestore 자동 시딩 완료: {len(items)}개 등록")
+                    return sorted(items, key=lambda x: x.get("date", ""))
+
                 return result
             except Exception as e:
                 logger.error(f"Firestore get_all_data 에러: {e}")

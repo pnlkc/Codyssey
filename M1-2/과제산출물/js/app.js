@@ -82,6 +82,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // 기본 오늘 날짜 폼에 세팅
     inputDate.value = new Date().toISOString().split("T")[0];
 
+    // Swagger 링크 동적 설정
+    const swaggerDocBtn = document.getElementById("swaggerDocBtn");
+    if (swaggerDocBtn) {
+      const isLocal = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1");
+      swaggerDocBtn.href = isLocal ? "http://localhost:8000/docs" : "https://codyssey-m1-2.onrender.com/docs";
+    }
+
     // 헬스체크 및 데이터 로드 병렬 수행
     checkServerHealth();
     await Promise.all([loadSummaryAndChart(), loadDataTable(), loadConversationList()]);
