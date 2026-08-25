@@ -146,7 +146,8 @@ class AIService:
 
     @classmethod
     async def _call_gemini(cls, system_prompt: str, history: List[Dict[str, Any]]) -> tuple[str, str]:
-        """Google Gemini API 호출 (Flash 계열 순차 Fallback 체인)"""
+        """Google Gemini API 호출 (비동기 타임아웃 및 Flash 순차 Fallback 체인)"""
+        import asyncio
         import google.generativeai as genai
         genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -162,15 +163,13 @@ class AIService:
         else:
             full_prompt = last_user_msg
 
-        # Flash 계열 모델 순차 폴백 체인 (최신 -> 표준 -> 경량)
+        # Flash 계열 모델 순차 폴백 체인 (빠른 순서로 시도)
         candidate_models = [
-            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (예: gemini-3.7-flash)
+            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (기본: gemini-3.7-flash)
+            "gemini-2.5-flash",           # 가장 안정적인 2.5 Flash
+            "gemini-flash-latest",        # Flash 최신 별칭
             "gemini-3.7-flash",           # 3.7 Flash
-            "gemini-3.6-flash",           # 3.6 Flash
             "gemini-3.5-flash",           # 3.5 Flash
-            "gemini-2.5-flash",           # 2.5 Flash
-            "gemini-flash-latest",        # Flash Latest
-            "gemini-3.1-flash-lite",      # 3.1 Flash Lite
             "gemini-2.5-flash-lite"       # 2.5 Flash Lite
         ]
         # 중복 제거 (순서 보존)
@@ -179,17 +178,23 @@ class AIService:
         last_err = None
         for model_name in models_to_try:
             try:
-                logger.info(f"Gemini Flash 호출 시도: {model_name}")
+                logger.info(f"Gemini Flash 비동기 호출 시도: {model_name}")
                 model = genai.GenerativeModel(
                     model_name=model_name,
                     system_instruction=system_prompt
                 )
-                response = model.generate_content(full_prompt)
+                
+                # 모델별 최대 6초 타임아웃 설정 (무한 지연 방지)
+                response = await asyncio.wait_for(
+                    model.generate_content_async(full_prompt),
+                    timeout=6.0
+                )
+                
                 if response and response.text:
-                    logger.info(f"Gemini Flash 호출 성공: {model_name}")
+                    logger.info(f"🎉 Gemini Flash 응답 수신 성공: {model_name}")
                     return response.text, model_name
             except Exception as e:
-                logger.warning(f"Flash 모델 '{model_name}' 호출 실패 ({e}), 다음 Flash 모델 시도...")
+                logger.warning(f"Flash 모델 '{model_name}' 지연 또는 오류 ({e}) -> 다음 Flash 모델로 즉시 전환...")
                 last_err = e
 
         raise last_err or RuntimeError("모든 Gemini Flash 계열 모델 호출에 실패했습니다.")
