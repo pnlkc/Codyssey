@@ -8,6 +8,14 @@ from config import db, firebase_initialized
 from models.data_model import DataCreate, DataUpdate, DataResponse
 from models.conversation_model import ConversationCreate, ConversationResponse, Message
 
+try:
+    from firebase_admin import firestore
+except ImportError:
+    try:
+        from google.cloud import firestore
+    except ImportError:
+        firestore = None
+
 logger = logging.getLogger("firestore_service")
 
 # 로컬 샘플 데이터 파일 경로
@@ -162,7 +170,8 @@ class FirestoreService:
         """대화 목록 조회 (최신순)"""
         if firebase_initialized and db:
             try:
-                docs = db.collection("conversations").order_by("updated_at", direction=firestore.Query.DESCENDING).stream()
+                direction = firestore.Query.DESCENDING if (firestore and hasattr(firestore, "Query")) else "DESCENDING"
+                docs = db.collection("conversations").order_by("updated_at", direction=direction).stream()
                 result = []
                 for doc in docs:
                     d = doc.to_dict()

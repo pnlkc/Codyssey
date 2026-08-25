@@ -34,12 +34,12 @@ app.include_router(conversation_router)
 app.include_router(chat_router)
 
 # 헬스체크 엔드포인트 (Render 콜드스타트 완화 및 가동 상태 확인용)
-@app.get("/api/health", tags=["System"])
+@app.api_route("/api/health", methods=["GET", "HEAD"], tags=["System"])
 async def health_check():
     return {
         "status": "online",
         "firebase_connected": firebase_initialized,
-        "ai_engine": "Gemini 2.5 Flash" if settings.GEMINI_API_KEY else ("OpenAI GPT-4o-mini" if settings.OPENAI_API_KEY else "Local Mock Engine"),
+        "ai_engine": f"Gemini ({settings.GEMINI_MODEL_NAME})" if settings.GEMINI_API_KEY else ("OpenAI GPT-4o-mini" if settings.OPENAI_API_KEY else "Local Mock Engine"),
         "version": "1.0.0"
     }
 
@@ -54,8 +54,8 @@ if os.path.exists(os.path.join(current_dir, "js")):
 if os.path.exists(os.path.join(current_dir, "data")):
     app.mount("/data", StaticFiles(directory=os.path.join(current_dir, "data")), name="data")
 
-# 프론트엔드 메인 index.html 서빙
-@app.get("/", include_in_schema=False)
+# 프론트엔드 메인 index.html 서빙 (GET 및 Render 헬스체크용 HEAD 지원)
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_index():
     index_path = os.path.join(current_dir, "index.html")
     if os.path.exists(index_path):

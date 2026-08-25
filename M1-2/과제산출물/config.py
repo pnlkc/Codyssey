@@ -28,7 +28,7 @@ class Settings:
 
     # AI API Keys & Models
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
-    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+    GEMINI_MODEL_NAME: str = os.getenv("GEMINI_MODEL_NAME", "gemini-3.7-flash")
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 
     # Firebase 설정

@@ -97,8 +97,7 @@ class AIService:
 
         if settings.GEMINI_API_KEY:
             try:
-                reply_text = await cls._call_gemini(system_prompt, messages_history)
-                model_used = "gemini-2.5-flash"
+                reply_text, model_used = await cls._call_gemini(system_prompt, messages_history)
             except Exception as e:
                 logger.error(f"Gemini API 호출 실패: {e}, 대체 로직 실행")
                 reply_text = cls._generate_mock_reply(request.message, summary)
@@ -146,8 +145,8 @@ class AIService:
         )
 
     @classmethod
-    async def _call_gemini(cls, system_prompt: str, history: List[Dict[str, Any]]) -> str:
-        """Google Gemini API 호출 (지정 모델 우선 및 스마트 Fallback 지원)"""
+    async def _call_gemini(cls, system_prompt: str, history: List[Dict[str, Any]]) -> tuple[str, str]:
+        """Google Gemini API 호출 (Flash 계열 순차 Fallback 체인)"""
         import google.generativeai as genai
         genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -163,13 +162,16 @@ class AIService:
         else:
             full_prompt = last_user_msg
 
-        # 시도할 모델 우선순위 목록 (사용자 지정 모델 우선 시도)
+        # Flash 계열 모델 순차 폴백 체인 (최신 -> 표준 -> 경량)
         candidate_models = [
-            settings.GEMINI_MODEL_NAME,
-            "gemini-3.7-flash",
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (예: gemini-3.7-flash)
+            "gemini-3.7-flash",           # 3.7 Flash
+            "gemini-3.6-flash",           # 3.6 Flash
+            "gemini-3.5-flash",           # 3.5 Flash
+            "gemini-2.5-flash",           # 2.5 Flash
+            "gemini-flash-latest",        # Flash Latest
+            "gemini-3.1-flash-lite",      # 3.1 Flash Lite
+            "gemini-2.5-flash-lite"       # 2.5 Flash Lite
         ]
         # 중복 제거 (순서 보존)
         models_to_try = list(dict.fromkeys(candidate_models))
@@ -177,20 +179,20 @@ class AIService:
         last_err = None
         for model_name in models_to_try:
             try:
-                logger.info(f"Gemini API 호출 시도 중: {model_name}")
+                logger.info(f"Gemini Flash 호출 시도: {model_name}")
                 model = genai.GenerativeModel(
                     model_name=model_name,
                     system_instruction=system_prompt
                 )
                 response = model.generate_content(full_prompt)
                 if response and response.text:
-                    logger.info(f"Gemini API 호출 성공: {model_name}")
-                    return response.text
+                    logger.info(f"Gemini Flash 호출 성공: {model_name}")
+                    return response.text, model_name
             except Exception as e:
-                logger.warning(f"모델 '{model_name}' 호출 실패 ({e}), 다음 후보 모델 시도...")
+                logger.warning(f"Flash 모델 '{model_name}' 호출 실패 ({e}), 다음 Flash 모델 시도...")
                 last_err = e
 
-        raise last_err or RuntimeError("모든 Gemini 모델 호출에 실패했습니다.")
+        raise last_err or RuntimeError("모든 Gemini Flash 계열 모델 호출에 실패했습니다.")
 
     @classmethod
     async def _call_openai(cls, system_prompt: str, history: List[Dict[str, Any]]) -> str:

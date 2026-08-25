@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from .conversation_model import Message
 
@@ -8,6 +8,8 @@ class ChatRequest(BaseModel):
     history: Optional[List[Message]] = Field(default_factory=list, description="이전 대화 맥락")
 
 class ChatResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     reply: str = Field(..., description="AI 비서 맞춤 답변")
     conversation_id: str = Field(..., description="대화 세션 ID")
     summary_applied: Optional[dict] = Field(None, description="프롬프트에 주입된 데이터 요약 정보")
