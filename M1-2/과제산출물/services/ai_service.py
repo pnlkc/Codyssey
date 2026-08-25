@@ -163,14 +163,14 @@ class AIService:
         else:
             full_prompt = last_user_msg
 
-        # Flash 계열 모델 순차 폴백 체인 (빠른 순서로 시도)
+        # Flash 계열 모델 순차 폴백 체인 (Google 공식 권장 모델 최우선)
         candidate_models = [
-            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (기본: gemini-3.7-flash)
-            "gemini-2.5-flash",           # 가장 안정적인 2.5 Flash
+            settings.GEMINI_MODEL_NAME,   # 사용자 지정 모델 (기본: gemini-3.6-flash)
+            "gemini-3.6-flash",           # Google 공식 권장 1순위 Flash 모델
+            "gemini-3.5-flash",           # 검증 완료 2순위 초고속 Flash 모델
+            "gemini-3.7-flash",           # 3.7 Flash 모델
             "gemini-flash-latest",        # Flash 최신 별칭
-            "gemini-3.7-flash",           # 3.7 Flash
-            "gemini-3.5-flash",           # 3.5 Flash
-            "gemini-2.5-flash-lite"       # 2.5 Flash Lite
+            "gemini-3.1-flash-lite",      # 경량 Flash
         ]
         # 중복 제거 (순서 보존)
         models_to_try = list(dict.fromkeys(candidate_models))
