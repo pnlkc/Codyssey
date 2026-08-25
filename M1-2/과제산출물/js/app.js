@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const reseedDataBtn = document.getElementById("reseedDataBtn");
   if (reseedDataBtn) {
     reseedDataBtn.addEventListener("click", async () => {
-      if (!confirm("Firestore 데이터를 최신 1년치 삼성전자 실제 종가 샘플 데이터로 초기화/동기화하시겠습니까?")) return;
+      if (!confirm("Firestore 데이터를 기본 샘플 시계열 데이터로 초기화/동기화하시겠습니까?")) return;
       try {
         reseedDataBtn.disabled = true;
         reseedDataBtn.textContent = "동기화 중...";
@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
   newChatBtn.addEventListener("click", () => {
     currentConversationId = null;
     chatMessages.innerHTML = "";
-    appendAssistantMessage("안녕하세요! 데이터 분석 비서입니다. 궁금한 실적이나 추세에 대해 물어보세요! 😊");
+    appendAssistantMessage("안녕하세요! 등록된 시계열 데이터를 분석하는 AI 비서입니다. 데이터 요약이나 추세에 대해 물어보세요! 😊");
     loadConversationList();
     showToast("새로운 대화 세션이 시작되었습니다.");
   });
