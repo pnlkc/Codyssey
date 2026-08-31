@@ -3,9 +3,16 @@
  * 백엔드 REST API 통신 및 콜드스타트 감지
  */
 
-const API_BASE = (window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1"))
-  ? "" // 로컬 환경에서는 동일 호스트
-  : (window.API_BASE_URL || "https://codyssey-m1-2.onrender.com"); // 프로덕션 배포 시 Render 백엔드 연결
+const API_BASE = (() => {
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+  const isLocal = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1");
+  if (isLocal) {
+    // 8000번 포트(백엔드 통합 서빙)인 경우 상대경로, 별도 프론트엔드 포트(Live Server 등)인 경우 localhost:8000 백엔드로 연결
+    return window.location.port === "8000" ? "" : "http://localhost:8000";
+  }
+  // Vercel 등 프로덕션 배포 시 Render 백엔드 기본 URL
+  return "https://codyssey-m1-2.onrender.com";
+})();
 
 class ApiClient {
   /** 공통 fetch 래퍼 */

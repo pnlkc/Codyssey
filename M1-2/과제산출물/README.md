@@ -99,46 +99,98 @@ flowchart TD
 
 ---
 
+---
+
+## 📁 프로젝트 디렉토리 구조 (Frontend & Backend 분리)
+
+```text
+M1-2/과제산출물/
+├── frontend/                     # [Vercel 배포 루트 디렉토리]
+│   ├── index.html                # 대시보드 웹 인터페이스
+│   ├── css/
+│   │   └── style.css             # 모던 디자인 시스템 & 다크모드 스타일
+│   ├── js/
+│   │   ├── api.js                # 백엔드 REST API & 실시간 SSE 통신 모듈
+│   │   ├── app.js                # UI 상태 관리 및 데이터/채팅 이벤트
+│   │   └── chart.js              # Canvas 2D 시계열 라인 차트 렌더러
+│   ├── vercel.json               # Vercel 정적 호스팅 라우팅 설정
+│   ├── .vercelignore             # Vercel 배포 제외 규칙
+│   └── README.md                 # 프론트엔드 전용 가이드
+│
+├── backend/                      # [Render 배포 루트 디렉토리]
+│   ├── main.py                   # FastAPI 메인 엔트리포인트 및 CORS 설정
+│   ├── config.py                 # 환경변수 로드, Firestore 및 로거 설정
+│   ├── seed_data.py              # Firestore 120개 초기 데이터 시딩
+│   ├── test_backend.py           # 백엔드 API 통합 테스트 스위트 (100% Pass)
+│   ├── requirements.txt          # Python 의존성 목록
+│   ├── .python-version           # Python 버전 지정 (3.11.9)
+│   ├── .env                      # 로컬 환경변수
+│   ├── .env.example              # 환경변수 템플릿
+│   ├── .gitignore                # Git 보안 제외 규칙
+│   ├── service_account.json      # Firebase 서비스 계정 키 (로컬용)
+│   ├── data/
+│   │   └── sample_timeseries.json # 120개 시계열 샘플 데이터
+│   ├── models/                   # Pydantic 데이터 모델
+│   ├── routers/                  # API 엔드포인트 라우터
+│   ├── services/                 # 비즈니스 로직 계층
+│   └── README.md                 # 백엔드 전용 가이드
+│
+├── README.md                     # 본 종합 가이드 문서
+├── M1-2_트러블슈팅_가이드.md     # 장애 진단 및 트러블슈팅 문서
+└── M1-2_평가_대비_답변서.md     # 평가 대비 기술 심층 답변서
+```
+
+---
+
 ## 🚀 로컬 실행 방법
 
-### 1. 가상환경 구성 및 패키지 설치
+### 1. 백엔드 서버 실행
 ```bash
-# 과제산출물 디렉토리로 이동
-cd c:\Users\pnlkc\AIProject\Codyssey\M1-2\과제산출물
+# 백엔드 디렉토리로 이동
+cd backend
 
-# Python 가상환경 생성 및 활성화
+# 가상환경 생성 및 활성화
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
+venv\Scripts\activate       # Mac/Linux: source venv/bin/activate
 
-# 의존성 패키지 설치
+# 의존성 설치
 pip install -r requirements.txt
-```
 
-### 2. 환경 변수 설정
-`.env.example` 파일을 복사하여 `.env` 파일을 생성하고 키를 입력합니다.
-```bash
-cp .env.example .env
-```
-```env
-# Google AI Studio 무료 API Key 입력 (https://aistudio.google.com/)
-GEMINI_API_KEY=your_actual_gemini_api_key
-
-# Firebase 서비스 계정 키 파일 경로 (또는 JSON 문자열)
-FIREBASE_SERVICE_ACCOUNT_PATH=service_account.json
-```
-> 💡 **참고:** Firebase 키나 Gemini API 키가 없어도 로컬에서는 **In-Memory Fallback 및 스마트 Mock 모드**가 즉시 활성화되어 모든 화면과 CRUD, 차트, AI 대화 기능이 100% 정상 작동합니다.
-
-### 3. 서버 실행
-```bash
+# 서버 실행 (FastAPI / Uvicorn)
 python main.py
-# 또는
-uvicorn main:app --reload --port 8000
 ```
-- 🌐 **웹 서비스 접속:** [http://localhost:8000](http://localhost:8000)
 - 📑 **Swagger API 문서:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- 🩺 **Health Check:** [http://localhost:8000/api/health](http://localhost:8000/api/health)
+
+### 2. 프론트엔드 실행
+- **방법 1:** VS Code에서 `frontend/index.html` 우클릭 -> **Open with Live Server** (기본 포트: 5500)
+- **방법 2:** `cd frontend` 후 `python -m http.server 3000` 실행 -> [http://localhost:3000](http://localhost:3000) 접속
+- *프론트엔드는 로컬 백엔드(`http://localhost:8000`)와 자동으로 연동됩니다.*
+
+---
+
+## ☁️ 클라우드 배포 가이드 (Vercel & Render 재설정)
+
+### 1. 백엔드 배포 (Render)
+1. [Render Dashboard](https://dashboard.render.com/) 접속 -> **New +** -> **Web Service**
+2. 레포지토리 연결 후 설정 입력:
+   - **Root Directory**: **빈칸 (공백으로 둠)** 👈 *(주의: Render는 한글 경로 입력을 거부하므로 반드시 빈칸 유지)*
+   - **Build Command**: `pip install -r "M1-2/과제산출물/backend/requirements.txt"`
+   - **Start Command**: `uvicorn main:app --app-dir "M1-2/과제산출물/backend" --host 0.0.0.0 --port $PORT`
+3. **Environment Variables** 추가:
+   - `PYTHON_VERSION`: `3.11.9`
+   - `GEMINI_API_KEY`: *(사용자의 Google AI Studio 키)*
+   - `GEMINI_MODEL_NAME`: `gemini-2.5-flash`
+   - `FIREBASE_SERVICE_ACCOUNT_JSON`: *(service_account.json 내용)*
+   - `ALLOWED_ORIGINS`: `https://codyssey-m1-2.vercel.app,http://localhost:8000,http://localhost:3000,http://127.0.0.1:5500,*`
+
+### 2. 프론트엔드 배포 (Vercel)
+1. [Vercel Dashboard](https://vercel.com/) 접속 -> **Add New...** -> **Project**
+2. 레포지토리 선택 후 설정 입력:
+   - **Framework Preset**: `Other`
+   - **Root Directory**: `M1-2/과제산출물/frontend` 👈 *(Edit 클릭하여 지정)*
+   - **Build & Output Settings**: 기본값(공란) 유지
+3. **Deploy** 클릭하여 배포 완료!
 
 ---
 

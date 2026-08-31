@@ -44,24 +44,32 @@ async def health_check():
         "version": "1.0.0"
     }
 
-# 정적 파일 서빙 디렉토리 설정
+# 정적 파일 서빙 디렉토리 설정 (백엔드 자체 서빙 또는 인접 frontend 폴더 연동 지원)
 current_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_dir = os.path.join(current_dir, "..", "frontend")
 
-# css, js, data 폴더 마운트
-if os.path.exists(os.path.join(current_dir, "css")):
-    app.mount("/css", StaticFiles(directory=os.path.join(current_dir, "css")), name="css")
-if os.path.exists(os.path.join(current_dir, "js")):
-    app.mount("/js", StaticFiles(directory=os.path.join(current_dir, "js")), name="js")
+# frontend 정적 리소스 마운트 (존재할 경우)
+target_static_dir = frontend_dir if os.path.exists(frontend_dir) else current_dir
+
+if os.path.exists(os.path.join(target_static_dir, "css")):
+    app.mount("/css", StaticFiles(directory=os.path.join(target_static_dir, "css")), name="css")
+if os.path.exists(os.path.join(target_static_dir, "js")):
+    app.mount("/js", StaticFiles(directory=os.path.join(target_static_dir, "js")), name="js")
 if os.path.exists(os.path.join(current_dir, "data")):
     app.mount("/data", StaticFiles(directory=os.path.join(current_dir, "data")), name="data")
 
 # 프론트엔드 메인 index.html 서빙 (GET 및 Render 헬스체크용 HEAD 지원)
 @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_index():
-    index_path = os.path.join(current_dir, "index.html")
+    index_path = os.path.join(target_static_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"message": "AI Assistant Backend is Running. Visit /docs for Swagger API Documentation."}
+    return {
+        "status": "online",
+        "message": "Time-Series AI Assistant Backend is running.",
+        "docs_url": "/docs",
+        "health_check": "/api/health"
+    }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
